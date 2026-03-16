@@ -15,7 +15,5 @@ async function bootstrap() {
 
   console.log(`🚀 Server is running on http://localhost:${port}`);
   console.log(`📊 Version: ${process.env.APP_VERSION || '1.0.0'}`);
-  console.log(`📁 Dataset: ${process.env.DATASET_PATH || 'data/tickets.json'}`);
-  console.log(`📝 Log file: ${process.env.LOG_FILE || 'logs/app.log'}`);
 }
 bootstrap();

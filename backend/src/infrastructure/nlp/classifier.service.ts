@@ -1,145 +1,131 @@
 import { Injectable } from '@nestjs/common';
+import {
+  checkAccuracy,
+  makeEmptyResult,
+  makeProbs,
+} from './classifier.metrics';
+import {
+  ClassifyResultPort,
+  SamplePort,
+  TestResultPort,
+  TrainResultPort,
+} from 'src/domain';
+import {
+  makeCategoryVectors,
+  makeDocs,
+  makeIdf,
+  makeVector,
+  sim,
+} from './tfidf.util';
+import { splitWords } from './tokenizer.util';
 
 @Injectable()
 export class ClassifierService {
   private trained = false;
+  private vocabulary = new Set<string>();
+  private categoryCounts: Map<string, number> = new Map();
+  private categories: string[] = [];
+  private totalDocs = 0;
+  private idf: Map<string, number> = new Map();
+  private categoryVectors: Map<string, Map<string, number>> = new Map();
+  private readonly priorWeight = 0.1;
 
-  train(dataset: { text: string; category: string }[]) {
+  private reset() {
+    this.vocabulary.clear();
+    this.categoryCounts.clear();
+    this.idf.clear();
+    this.categoryVectors.clear();
+  }
+
+  private words(text: string): string[] {
+    return splitWords(text);
+  }
+
+  private fillCounts(data: SamplePort[]) {
+    data.forEach(({ text, category }) => {
+      const words = this.words(text);
+      this.categoryCounts.set(
+        category,
+        (this.categoryCounts.get(category) || 0) + 1,
+      );
+      words.forEach((word) => this.vocabulary.add(word));
+    });
+  }
+
+  train(data: SamplePort[]): TrainResultPort {
+    this.reset();
+
+    this.categories = [...new Set(data.map((item) => item.category))];
+    this.totalDocs = data.length;
+
+    this.fillCounts(data);
+    const docs = makeDocs(data, (text) => this.words(text));
+    docs.forEach(({ words }) => {
+      words.forEach((word) => this.vocabulary.add(word));
+    });
+
+    this.idf = makeIdf(this.vocabulary, docs);
+    this.categoryVectors = makeCategoryVectors(
+      this.categories,
+      docs,
+      this.idf,
+      this.categoryCounts,
+    );
+
     this.trained = true;
-    return { success: true };
+
+    return {
+      success: true,
+      vocabularySize: this.vocabulary.size,
+      categories: this.categories,
+      samples: data.length,
+    };
   }
 
   classify(text: string): string {
+    return this.classifyWithConfidence(text).category;
+  }
+
+  classifyWithConfidence(text: string): ClassifyResultPort {
     if (!this.trained) throw new Error('Model not trained');
 
-    const lower = text.toLowerCase();
-
-    // Security category
-    if (
-      lower.includes('hack') ||
-      lower.includes('password') ||
-      lower.includes('security') ||
-      lower.includes('breach') ||
-      lower.includes('unauthorized') ||
-      lower.includes('suspicious') ||
-      lower.includes('phishing') ||
-      lower.includes('malware') ||
-      lower.includes('encryption') ||
-      lower.includes('vpn') ||
-      lower.includes('зламали') ||
-      lower.includes('зламано') ||
-      lower.includes('пароль') ||
-      lower.includes('безпека') ||
-      lower.includes('витік') ||
-      lower.includes('несанкціонований') ||
-      lower.includes('підозріл') ||
-      lower.includes('фішинг') ||
-      lower.includes('вірус') ||
-      lower.includes('шифрування') ||
-      lower.includes('автентифікація') ||
-      lower.includes('сертифікат')
-    ) {
-      return 'security';
+    const words = this.words(text);
+    if (words.length === 0) {
+      return makeEmptyResult(this.categories, this.categoryCounts);
     }
 
-    // Administrative category
-    if (
-      (lower.includes('user') &&
-        (lower.includes('add') ||
-          lower.includes('remove') ||
-          lower.includes('new'))) ||
-      lower.includes('permission') ||
-      lower.includes('role') ||
-      lower.includes('assign') ||
-      lower.includes('ownership') ||
-      lower.includes('admin') ||
-      (lower.includes('manage') &&
-        (lower.includes('subscription') || lower.includes('plan'))) ||
-      lower.includes('bulk import') ||
-      lower.includes('audit log') ||
-      (lower.includes('користувач') &&
-        (lower.includes('додати') ||
-          lower.includes('видалити') ||
-          lower.includes('новий'))) ||
-      lower.includes('права доступу') ||
-      lower.includes('роль') ||
-      lower.includes('призначити') ||
-      lower.includes('власніст') ||
-      lower.includes('адміністратор') ||
-      lower.includes('керувати') ||
-      lower.includes('імпорт') ||
-      lower.includes('аудит') ||
-      lower.includes('відділ') ||
-      lower.includes('філіал') ||
-      lower.includes('організація')
-    ) {
-      return 'administrative';
-    }
+    const input = makeVector(words, this.idf);
+    const scores: Record<string, number> = {};
 
-    // Technical category
-    if (
-      lower.includes('internet') ||
-      lower.includes('crash') ||
-      lower.includes('error') ||
-      lower.includes('bug') ||
-      lower.includes('server') ||
-      lower.includes('database') ||
-      lower.includes('network') ||
-      lower.includes('install') ||
-      lower.includes('load') ||
-      lower.includes('printer') ||
-      lower.includes('email') ||
-      lower.includes('інтернет') ||
-      lower.includes('вилітає') ||
-      lower.includes('помилка') ||
-      lower.includes('баг') ||
-      lower.includes('сервер') ||
-      lower.includes('база даних') ||
-      lower.includes('мережа') ||
-      lower.includes('встановл') ||
-      lower.includes('завантаж') ||
-      lower.includes('принтер') ||
-      lower.includes('пошта') ||
-      lower.includes('підключ') ||
-      lower.includes('зависає') ||
-      lower.includes('не працює') ||
-      lower.includes('не відповідає') ||
-      lower.includes('не відкривається')
-    ) {
-      return 'technical';
-    }
+    this.categories.forEach((category) => {
+      const prior = Math.log(
+        (this.categoryCounts.get(category) || 1) / this.totalDocs,
+      );
+      const score = sim(input, this.categoryVectors.get(category)!);
+      scores[category] = score + prior * this.priorWeight;
+    });
 
-    // Financial category
-    if (
-      lower.includes('charge') ||
-      lower.includes('payment') ||
-      lower.includes('money') ||
-      lower.includes('refund') ||
-      lower.includes('billing') ||
-      lower.includes('invoice') ||
-      lower.includes('price') ||
-      lower.includes('fee') ||
-      lower.includes('cost') ||
-      lower.includes('card') ||
-      lower.includes('transaction') ||
-      lower.includes('списал') ||
-      lower.includes('списан') ||
-      lower.includes('платіж') ||
-      lower.includes('гроші') ||
-      lower.includes('повернут') ||
-      lower.includes('рахунок') ||
-      lower.includes('ціна') ||
-      lower.includes('плата') ||
-      lower.includes('вартість') ||
-      lower.includes('картк') ||
-      lower.includes('транзакц') ||
-      lower.includes('квитанц') ||
-      lower.includes('промокод')
-    ) {
-      return 'financial';
-    }
+    const bestCategory = this.categories.reduce((best, cat) =>
+      scores[cat] > scores[best] ? cat : best,
+    );
+    const probabilities = makeProbs(scores, this.categories);
 
-    // Informational category (default)
-    return 'informational';
+    return {
+      category: bestCategory,
+      confidence: probabilities[bestCategory],
+      probabilities,
+    };
+  }
+
+  evaluate(testData: SamplePort[]): TestResultPort {
+    if (!this.trained) throw new Error('Model not trained');
+
+    return checkAccuracy(this.categories, testData, (text) =>
+      this.classify(text),
+    );
+  }
+
+  isTrained(): boolean {
+    return this.trained;
   }
 }

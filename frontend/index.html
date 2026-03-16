@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Класифікація звернень служби підтримки</title>
     <link rel="stylesheet" href="style.css" />
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   </head>
   <body>
     <div class="container">
@@ -13,13 +12,13 @@
         <h1>Класифікатор звернень</h1>
         <p>
           Автоматичне визначення типу звернення: Технічне, Фінансове,
-          Інформаційне, Безпека, Адміністративне
+          Інформаційне, Безпека
         </p>
       </div>
 
       <div class="card">
         <h2>Навчання моделі</h2>
-        <button class="btn" onclick="trainModel()" id="trainBtn">
+        <button type="button" class="btn" onclick="trainModel()" id="trainBtn">
           Навчити модель
         </button>
         <div id="trainResult"></div>
@@ -29,16 +28,22 @@
       <div class="card">
         <h2>Класифікація звернення</h2>
         <div class="input-group">
-          <label for="ticketText">Введіть звернення (мінімум 3 символи):</label>
+          <label for="ticketText">Введіть звернення (мінімум 2 символи):</label>
           <textarea
             id="ticketText"
-            placeholder="Українською: 'мій інтернет не працює' або 'мене двічі списали гроші'&#10;English: 'my account was hacked' або 'need to add new user'"
+            placeholder="'мій інтернет не працює' або 'my account was hacked'"
           ></textarea>
         </div>
-        <button class="btn" onclick="classifyTicket()" id="classifyBtn">
+        <button
+          type="button"
+          class="btn"
+          onclick="classifyTicket()"
+          id="classifyBtn"
+        >
           Класифікувати
         </button>
         <div id="classifyResult"></div>
+      </div>
     </div>
 
     <script src="app.js"></script>

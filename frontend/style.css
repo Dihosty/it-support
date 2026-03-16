@@ -1,28 +1,119 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
 body {
-  font-family: Arial, sans-serif;
-  margin: 20px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: #f3f3f3;
+  min-height: 100vh;
+  padding: 16px;
+  line-height: 1.6;
+  color: #222;
 }
 
-section {
-  margin-bottom: 30px;
+.container {
+  max-width: 820px;
+  margin: 0 auto;
+}
+
+.header {
+  background: #fff;
   padding: 20px;
-  border: 1px solid #ccc;
+  border: 1px solid #d9d9d9;
+  margin-bottom: 12px;
+  text-align: center;
 }
 
-button {
-  padding: 10px 20px;
-  font-size: 16px;
-  cursor: pointer;
+.header h1 {
+  color: #1f1f1f;
+  font-size: 2rem;
+  margin-bottom: 8px;
+}
+
+.header p {
+  color: #5b5b5b;
+  font-size: 1rem;
+}
+
+.card {
+  background: #fff;
+  padding: 18px;
+  border: 1px solid #d9d9d9;
+  margin-bottom: 12px;
+}
+
+.card h2 {
+  color: #1f1f1f;
+  font-size: 1.25rem;
+  margin-bottom: 12px;
+  border-bottom: 1px solid #e2e2e2;
+  padding-bottom: 8px;
+}
+
+.input-group {
+  margin-bottom: 12px;
+}
+
+.input-group label {
+  display: block;
+  color: #3f3f3f;
+  font-weight: 600;
+  margin-bottom: 8px;
 }
 
 textarea {
   width: 100%;
+  min-height: 110px;
   padding: 10px;
-  font-size: 14px;
+  font-size: 16px;
+  border: 1px solid #c8c8c8;
+  border-radius: 4px;
+  font-family: inherit;
+  resize: vertical;
+  transition: border-color 0.2s;
+  background: #fff;
+  color: #1f1f1f;
 }
 
-#trainResult {
-  margin-top: 15px;
-  padding: 10px;
-  background: #f0f0f0;
+textarea:focus {
+  outline: none;
+  border-color: #8e8e8e;
+}
+
+.btn {
+  background: #2f2f2f;
+  color: #fff;
+  padding: 9px 18px;
+  font-size: 16px;
+  font-weight: 600;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn:hover:not(:disabled) {
+  background: #454545;
+}
+
+.btn:active:not(:disabled) {
+  background: #222;
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+#trainResult,
+#classifyResult {
+  margin-top: 12px;
+  min-height: 20px;
+  color: #2c2c2c;
+}
+
+.stats {
+  margin-top: 10px;
 }
