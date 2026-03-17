@@ -1,4 +1,10 @@
-import { Body, Controller, Get, Post } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Get,
+  Post,
+} from '@nestjs/common';
 import { TrainModelService, ClassifyTicketService } from 'src/application';
 import { LoggerService } from 'src/infrastructure';
 
@@ -31,8 +37,17 @@ export class ClassifierController {
   @Post('classify')
   classify(@Body() body: { text: string }) {
     this.logger.logRequest('POST', '/classify');
+    if (
+      !body ||
+      typeof body.text !== 'string' ||
+      body.text.trim().length === 0
+    ) {
+      this.logger.logRequest('POST', '/classify', 400);
+      throw new BadRequestException('text must be a non-empty string');
+    }
+
     try {
-      const result = this.classifyService.classify(body.text);
+      const result = this.classifyService.classify(body.text.trim());
       this.logger.logRequest('POST', '/classify', 200);
       return result;
     } catch (error) {
